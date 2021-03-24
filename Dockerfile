@@ -12,7 +12,7 @@ ENV GEOS http://download.osgeo.org/geos/geos-3.9.1.tar.bz2
 #from http://trac.osgeo.org/gdal/wiki/DownloadSource
 ENV GDAL http://download.osgeo.org/gdal/3.0.4/gdal-3.0.4.tar.gz
 #from https://github.com/OSGeo/proj.4/wiki
-ENV PROJ http://download.osgeo.org/proj/proj-8.0.0.tar.gz
+ENV PROJ https://github.com/OSGeo/PROJ/releases/download/8.0.0/proj-8.0.0.tar.gz
 #from https://gforge.inria.fr/frs/?group_id=52
 ENV CGAL https://gforge.inria.fr/frs/download.php/file/35139/CGAL-4.6.3.tar.xz
 #from https://github.com/Oslandia/SFCGAL/releases
@@ -20,7 +20,7 @@ ENV SFCGAL https://github.com/Oslandia/SFCGAL/archive/v1.3.8.tar.gz
 
 #TODO make PROCESSOR_COUNT dynamic
 #built by docker.io, so reducing to 1. increase to match build server processor count as needed
-ENV PROCESSOR_COUNT 4
+ENV PROCESSOR_COUNT 8
 
 ##Installation
 
@@ -31,6 +31,7 @@ RUN apt-get -y update && apt-get -y install \
     build-essential postgresql-server-dev-$PG_MAJOR libxml2-dev libjson-c-dev \
     cmake libboost-dev libgmp-dev libmpfr-dev libboost-thread-dev libboost-system-dev \
     libpcre3-dev
+RUN apt-get install -y sqlite3
 
 #install qt
 RUN apt-get install -y --force-yes qt5-default libqt5webkit5-dev
@@ -45,20 +46,22 @@ RUN ldconfig
 WORKDIR /install-postgis
 RUN test -x geos
 
-WORKDIR /install-postgis/gdal
-ADD $GDAL /install-postgis/gdal.tar.gz
-RUN tar xf /install-postgis/gdal.tar.gz -C /install-postgis/gdal --strip-components=1
-RUN ./configure --with-geos=/usr/local/bin/geos-config && make -j $PROCESSOR_COUNT && make install
-RUN ldconfig
-WORKDIR /install-postgis
-RUN test -x gdal
-
 WORKDIR /install-postgis/proj
 ADD $PROJ /install-postgis/proj.tar.gz
 RUN tar xf /install-postgis/proj.tar.gz -C /install-postgis/proj --strip-components=1
 RUN ./configure && make -j $PROCESSOR_COUNT && make install
 WORKDIR /install-postgis
 RUN test -f /usr/local/include/proj_api.h
+
+WORKDIR /install-postgis/gdal
+ADD $GDAL /install-postgis/gdal.tar.gz
+RUN tar xf /install-postgis/gdal.tar.gz -C /install-postgis/gdal --strip-components=1
+RUN ./configure --with-proj=/usr/local --with-geos=/usr/local/bin/geos-config && make -j $PROCESSOR_COUNT && make install
+RUN ldconfig
+WORKDIR /install-postgis
+RUN test -x gdal
+
+
 
 WORKDIR /install-postgis/cgal
 ADD $CGAL /install-postgis/cgal.tar.xz
