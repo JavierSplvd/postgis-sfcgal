@@ -20,55 +20,31 @@ ENV SFCGAL https://github.com/Oslandia/SFCGAL/archive/v1.3.8.tar.gz
 
 #TODO make PROCESSOR_COUNT dynamic
 #built by docker.io, so reducing to 1. increase to match build server processor count as needed
-ENV PROCESSOR_COUNT 8
+ENV PROCESSOR_COUNT 1
 
 ##Installation
 
 #postgis required packages, PG_MAJOR from parent container
 #lib building packages
 #for address_standardizer
-RUN apt-get -y update && apt-get -y install \
-    build-essential postgresql-server-dev-$PG_MAJOR libxml2-dev libjson-c-dev \
-    cmake libboost-dev libgmp-dev libmpfr-dev libboost-thread-dev libboost-system-dev \
-    libpcre3-dev
-RUN apt-get install -y sqlite3
+# RUN apt-get -y update && apt-get -y install \
+#     build-essential postgresql-server-dev-$PG_MAJOR libxml2-dev libjson-c-dev \
+#     cmake libboost-dev libgmp-dev libmpfr-dev libboost-thread-dev libboost-system-dev \
+#     libpcre3-dev
+# RUN apt-get install -y pkg-config libtool automake zlib1g-dev sqlite3 libsqlite3-dev libcurl4-gnutls-dev libtiff5-dev
+# RUN apt-get install -y libcgal-dev
+
+RUN apt-get update
+
+RUN apt-get install -y autoconf build-essential cmake docbook-mathml docbook-xsl libboost-dev libboost-thread-dev libboost-filesystem-dev libboost-system-dev libboost-iostreams-dev libboost-program-options-dev libboost-timer-dev libcunit1-dev libgdal-dev libgeos++-dev libgeotiff-dev libgmp-dev libjson-c-dev liblas-dev libmpfr-dev libopenscenegraph-dev libpq-dev libproj-dev libxml2-dev postgresql-server-dev-9.4 xsltproc git build-essential wget
+RUN apt-get install -y libcgal-dev postgresql-server-dev-13
+
+RUN apt-get install -y protobuf-compiler
 
 #install qt
 RUN apt-get install -y --force-yes qt5-default libqt5webkit5-dev
 
 WORKDIR /install-postgis
-
-WORKDIR /install-postgis/geos
-ADD $GEOS /install-postgis/geos.tar.bz2
-RUN tar xf /install-postgis/geos.tar.bz2 -C /install-postgis/geos --strip-components=1
-RUN ./configure && make -j $PROCESSOR_COUNT && make install
-RUN ldconfig
-WORKDIR /install-postgis
-RUN test -x geos
-
-WORKDIR /install-postgis/proj
-ADD $PROJ /install-postgis/proj.tar.gz
-RUN tar xf /install-postgis/proj.tar.gz -C /install-postgis/proj --strip-components=1
-RUN ./configure && make -j $PROCESSOR_COUNT && make install
-WORKDIR /install-postgis
-RUN test -f /usr/local/include/proj_api.h
-
-WORKDIR /install-postgis/gdal
-ADD $GDAL /install-postgis/gdal.tar.gz
-RUN tar xf /install-postgis/gdal.tar.gz -C /install-postgis/gdal --strip-components=1
-RUN ./configure --with-proj=/usr/local --with-geos=/usr/local/bin/geos-config && make -j $PROCESSOR_COUNT && make install
-RUN ldconfig
-WORKDIR /install-postgis
-RUN test -x gdal
-
-
-
-WORKDIR /install-postgis/cgal
-ADD $CGAL /install-postgis/cgal.tar.xz
-RUN tar xf /install-postgis/cgal.tar.xz -C /install-postgis/cgal --strip-components=1
-RUN cmake . && make -j $PROCESSOR_COUNT && make install
-WORKDIR /install-postgis
-RUN test -d /usr/local/lib/CGAL
 
 WORKDIR /install-postgis/sfcgal
 ADD $SFCGAL /install-postgis/sfcgal.tar.gz
@@ -80,7 +56,7 @@ RUN test -x $sfcgal_config
 WORKDIR /install-postgis/postgis
 ADD $POSTGIS /install-postgis/postgis.tar.gz
 RUN tar xf /install-postgis/postgis.tar.gz -C /install-postgis/postgis --strip-components=1
-RUN ./configure --with-geosconfig=/usr/local/bin/geos-config --with-gdalconfig=/usr/local/bin/gdal-config --with-sfcgal=/usr/local/bin/sfcgal-config --with-projdir=/usr/local --with-raster --with-topology && make
+RUN ./configure --with-raster --with-topology --without-protobuf && make
 WORKDIR /install-postgis/postgis/extensions/postgis
 RUN make -j $PROCESSOR_COUNT && make install
 WORKDIR /install-postgis/postgis/extensions/postgis_topology

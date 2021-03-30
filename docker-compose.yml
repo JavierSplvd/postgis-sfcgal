@@ -1,7 +1,7 @@
 version: "3"
 services:
   database:
-    image: "numi:postgis"
+    image: "numian/postgres-sfcgal:latest"
     env_file:
       - database.env
     volumes:
